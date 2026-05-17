@@ -5,7 +5,7 @@ from ai.schemas import Ingredient, NutritionFacts
 from ai.nutrition import USDAProvider
 from src.config import settings
 
-logger = logging.getLogger(name)
+logger = logging.getLogger(__name__)
 
 _SEMAPHORE = asyncio.Semaphore(settings.nutrition_concurrency_limit)
 
