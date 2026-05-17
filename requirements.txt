@@ -1,0 +1,8 @@
+# Empty requirements.txt - to be populated with pinned dependencies
+pydantic-settings
+fastapi
+uvicorn
+asyncio
+sqlalchemy
+pytest
+httpx
