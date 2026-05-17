@@ -1,21 +1,22 @@
 import logging
 from ai import vlm, calculator
-from ai.schemas import IngredientList, NutritionTotals
+from ai.schemas import Ingredient, NutritionFacts, Nutrition
 
 logger = logging.getLogger(__name__)
 
 
-def identify_ingredients(image_path: str) -> IngredientList:
-    """Call the VLM to identify ingredients in an image."""
+def identify_ingredients(image_path: str) -> list[Ingredient]:
     logger.info("identifying ingredients", extra={"image": image_path})
     result = vlm.identify_ingredients(image_path)
-    logger.debug("identified %d ingredients", len(result.items))
+    logger.debug("identified %d ingredients", len(result))
     return result
 
 
-def compute_totals(ingredients: IngredientList) -> NutritionTotals:
-    """Compute nutrition totals from identified ingredients."""
+def compute_totals(
+    ingredients: list[Ingredient],
+    facts_by_name: dict[str, NutritionFacts],
+) -> Nutrition:
     logger.info("computing nutrition totals")
-    result = calculator.compute_totals(ingredients)
+    result = calculator.compute_totals(ingredients, facts_by_name)
     logger.debug("totals: %s", result)
     return result
