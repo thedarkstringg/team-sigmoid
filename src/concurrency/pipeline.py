@@ -5,7 +5,7 @@ from ai.schemas import Ingredient, NutritionFacts
 from ai.nutrition import USDAProvider
 from src.config import settings
 
-logger = logging.getLogger(name)
+logger = logging.getLogger(__name__)
 
 _SEMAPHORE = asyncio.Semaphore(settings.nutrition_concurrency_limit)
 
@@ -32,7 +32,7 @@ async def fetch_nutrition_parallel(
 ) -> dict[str, NutritionFacts]:
     provider = USDAProvider(api_key=settings.usda_api_key)
     tasks = [_fetch_one(ing, provider) for ing in ingredients]
-    results = await asyncio.gather(*tasks)
+    results = await asyncio.gather(*tasks, return_exceptions=False)
 
     facts_by_name: dict[str, NutritionFacts] = {}
     for name, facts in results:
