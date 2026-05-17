@@ -10,6 +10,8 @@ from src.config import settings
 from src.storage.repository import AnalysisRepository
 from src.core.analyzer import run_analysis
 
+import imghdr
+
 logger = logging.getLogger(__name__)
 
 repo = AnalysisRepository()
@@ -35,6 +37,7 @@ async def health() -> dict:
 
 @app.post("/analyze")
 async def analyze(image: UploadFile = File(...)) -> JSONResponse:
+    # Validate content type header
     if image.content_type not in ALLOWED_CONTENT_TYPES:
         raise HTTPException(
             status_code=422,
@@ -43,14 +46,24 @@ async def analyze(image: UploadFile = File(...)) -> JSONResponse:
 
     data = await image.read()
 
+    # Validate not empty
+    if len(data) == 0:
+        raise HTTPException(status_code=422, detail="Uploaded file is empty.")
+
+    # Validate file size
     if len(data) > settings.max_image_bytes:
         raise HTTPException(
             status_code=413,
             detail=f"File too large ({len(data)} bytes). Maximum is {settings.max_image_bytes} bytes.",
         )
 
-    if len(data) == 0:
-        raise HTTPException(status_code=422, detail="Uploaded file is empty.")
+    # Validate magic bytes — don't trust Content-Type header alone
+    detected = imghdr.what(None, h=data)
+    if detected not in ("jpeg", "png"):
+        raise HTTPException(
+            status_code=422,
+            detail=f"File content is not a valid JPEG or PNG (detected: {detected}).",
+        )
 
     logger.info("api.analyze.received", extra={"filename": image.filename, "size": len(data)})
 
@@ -75,7 +88,6 @@ async def analyze(image: UploadFile = File(...)) -> JSONResponse:
     finally:
         if tmp_path and os.path.exists(tmp_path):
             os.unlink(tmp_path)
-
 
 @app.get("/history")
 async def history(limit: int = 20) -> list:
