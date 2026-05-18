@@ -10,7 +10,7 @@ from tenacity import (
 from ai import vlm, calculator
 from ai.schemas import IngredientList, NutritionTotals
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(name)
 
 _RETRY = dict(
     stop=stop_after_attempt(3),
@@ -21,7 +21,7 @@ _RETRY = dict(
 )
 
 
-@retry(**_RETRY)
+@retry(_RETRY)
 def identify_ingredients(image_path: str) -> IngredientList:
     """Call the VLM to identify ingredients — retries on failure."""
     t0 = time.monotonic()
@@ -37,7 +37,7 @@ def identify_ingredients(image_path: str) -> IngredientList:
     return result
 
 
-@retry(**_RETRY)
+@retry(_RETRY)
 def compute_totals(ingredients: IngredientList) -> NutritionTotals:
     """Compute nutrition totals — retries on failure."""
     t0 = time.monotonic()
