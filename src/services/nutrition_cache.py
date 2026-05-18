@@ -15,16 +15,16 @@ def get(ingredient: str) -> Any | None:
     """Return cached nutrition data or None if missing/expired."""
     entry = _cache.get(ingredient)
     if entry is None:
-        logger.debug("cache miss: '%s'", ingredient)
+        logger.info("cache.miss", extra={"ingredient": ingredient})
         return None
 
     data, expires_at = entry
     if time.monotonic() > expires_at:
-        logger.debug("cache expired: '%s'", ingredient)
+        logger.info("cache.expired", extra={"ingredient": ingredient})
         del _cache[ingredient]
         return None
 
-    logger.debug("cache hit: '%s'", ingredient)
+    logger.info("cache.hit", extra={"ingredient": ingredient})
     return data
 
 
@@ -32,19 +32,19 @@ def set(ingredient: str, data: Any, ttl: int = _DEFAULT_TTL) -> None:
     """Store nutrition data with a TTL (seconds)."""
     expires_at = time.monotonic() + ttl
     _cache[ingredient] = (data, expires_at)
-    logger.debug("cache set: '%s' (ttl=%ds)", ingredient, ttl)
+    logger.debug("cache.set", extra={"ingredient": ingredient, "ttl": ttl})
 
 
 def invalidate(ingredient: str) -> None:
     """Manually remove a single entry from the cache."""
     _cache.pop(ingredient, None)
-    logger.debug("cache invalidated: '%s'", ingredient)
+    logger.debug("cache.invalidated", extra={"ingredient": ingredient})
 
 
 def clear() -> None:
     """Wipe the entire cache — useful in tests."""
     _cache.clear()
-    logger.debug("cache cleared")
+    logger.debug("cache.cleared")
 
 
 def size() -> int:
