@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import time
 
 from ai.schemas import Ingredient, NutritionFacts
 from ai.nutrition import USDAProvider
@@ -30,8 +31,11 @@ async def _fetch_one(
 async def fetch_nutrition_parallel(
     ingredients: list[Ingredient],
 ) -> dict[str, NutritionFacts]:
+    t0 = time.monotonic()
     provider = USDAProvider(api_key=settings.usda_api_key)
     tasks = [_fetch_one(ing, provider) for ing in ingredients]
+
+    logger.info("pipeline.start", extra={"total": len(ingredients)})
     results = await asyncio.gather(*tasks, return_exceptions=False)
 
     facts_by_name: dict[str, NutritionFacts] = {}
@@ -41,6 +45,11 @@ async def fetch_nutrition_parallel(
 
     logger.info(
         "pipeline.done",
-        extra={"total": len(ingredients), "fetched": len(facts_by_name)},
+        extra={
+            "total": len(ingredients),
+            "fetched": len(facts_by_name),
+            "failed": len(ingredients) - len(facts_by_name),
+            "duration_ms": round((time.monotonic() - t0) * 1000),
+        },
     )
     return facts_by_name
