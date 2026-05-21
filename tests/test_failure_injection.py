@@ -26,6 +26,9 @@ class FailureInjectingUSDAProvider:
             source="failure-injection-test",
         )
 
+    def lookup(self, ingredient_name: str) -> NutritionFacts:
+        return self.get_nutrition(ingredient_name)
+
 
 def test_parallel_nutrition_degrades_when_some_provider_calls_fail(monkeypatch, caplog):
     monkeypatch.setattr(pipeline, "USDAProvider", FailureInjectingUSDAProvider)

@@ -21,6 +21,9 @@ class FakeUSDAProvider:
             source="fake",
         )
 
+    def lookup(self, ingredient_name: str) -> NutritionFacts:
+        return self.get_nutrition(ingredient_name)
+
 
 def test_fetch_nutrition_parallel_skips_failed_lookup(monkeypatch):
     monkeypatch.setattr(pipeline, "USDAProvider", FakeUSDAProvider)
