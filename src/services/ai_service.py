@@ -1,5 +1,7 @@
 import logging
 import time
+import httpx
+import requests
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -15,7 +17,12 @@ logger = logging.getLogger(__name__)
 _RETRY = dict(
     stop=stop_after_attempt(3),
     wait=wait_exponential_jitter(initial=1, max=10),
-    retry=retry_if_exception_type(Exception),
+    retry=retry_if_exception_type((
+        httpx.HTTPError,
+        requests.RequestException,
+        TimeoutError,
+        ConnectionError,
+    )),
     before_sleep=before_sleep_log(logger, logging.WARNING),
     reraise=True,
 )
