@@ -5,9 +5,13 @@ import time
 from ai.schemas import Ingredient, NutritionFacts
 from ai.nutrition import USDAProvider
 from src.config import settings
+from ai.schemas import Ingredient, NutritionFacts
+from ai.nutrition import USDAProvider
+from src.config import settings
 
 logger = logging.getLogger(__name__)
 
+_SEMAPHORE = asyncio.Semaphore(settings.nutrition_concurrency_limit)
 _SEMAPHORE = asyncio.Semaphore(settings.nutrition_concurrency_limit)
 
 
@@ -15,7 +19,21 @@ async def _fetch_one(
     ingredient: Ingredient,
     provider: USDAProvider,
 ) -> tuple[str, NutritionFacts | None]:
+async def _fetch_one(
+    ingredient: Ingredient,
+    provider: USDAProvider,
+) -> tuple[str, NutritionFacts | None]:
     async with _SEMAPHORE:
+        try:
+            logger.debug("pipeline.fetch", extra={"ingredient": ingredient.name})
+            facts = await asyncio.to_thread(provider.lookup, ingredient.name)
+            return ingredient.name, facts
+        except Exception as e:
+            logger.warning(
+                "pipeline.fetch_failed",
+                extra={"ingredient": ingredient.name, "error": str(e)},
+            )
+            return ingredient.name, None
         try:
             logger.debug("pipeline.fetch", extra={"ingredient": ingredient.name})
             facts = await asyncio.to_thread(provider.lookup, ingredient.name)
@@ -52,4 +70,5 @@ async def fetch_nutrition_parallel(
             "duration_ms": round((time.monotonic() - t0) * 1000),
         },
     )
+    return facts_by_name
     return facts_by_name
