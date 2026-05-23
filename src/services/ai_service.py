@@ -8,9 +8,9 @@ from tenacity import (
     retry_if_exception_type,
 )
 from ai import vlm, calculator
-from ai.schemas import IngredientList, NutritionTotals
+from ai.schemas import Ingredient, NutritionFacts, Nutrition
 
-logger = logging.getLogger(name)
+logger = logging.getLogger(__name__)
 
 _RETRY = dict(
     stop=stop_after_attempt(3),
@@ -21,8 +21,8 @@ _RETRY = dict(
 )
 
 
-@retry(_RETRY)
-def identify_ingredients(image_path: str) -> IngredientList:
+@retry(**_RETRY)
+def identify_ingredients(image_path: str) -> list[Ingredient]:
     """Call the VLM to identify ingredients — retries on failure."""
     t0 = time.monotonic()
     logger.info("ai_service.identify.start", extra={"image": image_path})
@@ -30,19 +30,22 @@ def identify_ingredients(image_path: str) -> IngredientList:
     logger.info(
         "ai_service.identify.done",
         extra={
-            "count": len(result.items),
+            "count": len(result),
             "duration_ms": round((time.monotonic() - t0) * 1000),
         },
     )
     return result
 
 
-@retry(_RETRY)
-def compute_totals(ingredients: IngredientList) -> NutritionTotals:
+@retry(**_RETRY)
+def compute_totals(
+    ingredients: list[Ingredient],
+    facts_by_name: dict[str, NutritionFacts],
+) -> Nutrition:
     """Compute nutrition totals — retries on failure."""
     t0 = time.monotonic()
     logger.info("ai_service.compute.start")
-    result = calculator.compute_totals(ingredients)
+    result = calculator.compute_totals(ingredients, facts_by_name)
     logger.info(
         "ai_service.compute.done",
         extra={"duration_ms": round((time.monotonic() - t0) * 1000)},
