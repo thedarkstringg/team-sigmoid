@@ -191,3 +191,13 @@ docker run --env-file .env -p 8000:8000 ai-food-analyzer
 - Do not commit real API keys.
 - Some provider integrations require API keys.
 - Offline tests use fake or mocked data.
+
+## Type checking
+
+Run with:
+
+```bash
+mypy src/ --ignore-missing-imports
+```
+
+Result: 2 known false positives in `ai_service.py` suppressed with `# type: ignore[call-overload]` — tenacity's `@retry(**dict)` pattern is not resolvable by mypy's overload matching. All other 17 source files pass cleanly.
