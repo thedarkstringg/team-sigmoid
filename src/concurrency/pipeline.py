@@ -19,10 +19,6 @@ async def _fetch_one(
     ingredient: Ingredient,
     provider: USDAProvider,
 ) -> tuple[str, NutritionFacts | None]:
-async def _fetch_one(
-    ingredient: Ingredient,
-    provider: USDAProvider,
-) -> tuple[str, NutritionFacts | None]:
     async with _SEMAPHORE:
         try:
             logger.debug("pipeline.fetch", extra={"ingredient": ingredient.name})
