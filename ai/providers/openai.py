@@ -22,7 +22,8 @@ def _make_openai_client(api_key: str | None):
         raise ProviderError(
             "The `openai` package is required. Install with `pip install openai`."
         ) from e
-    return openai.OpenAI(api_key=key)
+    base_url = os.getenv("OPENAI_BASE_URL") or None
+    return openai.OpenAI(api_key=key, base_url=base_url)
 
 
 class OpenAILLM(LLMProvider):
@@ -134,7 +135,8 @@ class OpenAIEmbedding(EmbeddingProvider):
             raise ProviderError(
                 "The `openai` package is required for OpenAIEmbedding."
             ) from e
-        self._client = openai.OpenAI(api_key=self._api_key)
+        base_url = os.getenv("OPENAI_BASE_URL") or None
+        self._client = openai.OpenAI(api_key=self._api_key, base_url=base_url)
         # Known dimensions for OpenAI's standard embedding models.
         self._dim = {
             "text-embedding-3-small": 1536,

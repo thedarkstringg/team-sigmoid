@@ -1,7 +1,9 @@
 import asyncio
 import logging
 import argparse
+import sys
 
+from ai.providers.base import ProviderError
 from src.config import settings
 
 logging.basicConfig(
@@ -21,12 +23,21 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    if args.command == "analyze":
-        asyncio.run(_analyze(args.image_path))
-    elif args.command == "history":
-        asyncio.run(_history())
-    else:
-        parser.print_help()
+    try:
+        if args.command == "analyze":
+            asyncio.run(_analyze(args.image_path))
+        elif args.command == "history":
+            asyncio.run(_history())
+        else:
+            parser.print_help()
+    except ProviderError as e:
+        print(f"Configuration error: {e}", file=sys.stderr)
+        print(
+            "Set the required API key in .env or your shell, then try again. "
+            "For the default OpenAI/OpenRouter provider, set OPENAI_API_KEY.",
+            file=sys.stderr,
+        )
+        raise SystemExit(1) from e
 
 
 async def _analyze(image_path: str) -> None:
