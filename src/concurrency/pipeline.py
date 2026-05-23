@@ -5,9 +5,6 @@ import time
 from ai.schemas import Ingredient, NutritionFacts
 from ai.nutrition import USDAProvider
 from src.config import settings
-from ai.schemas import Ingredient, NutritionFacts
-from ai.nutrition import USDAProvider
-from src.config import settings
 
 logger = logging.getLogger(__name__)
 
