@@ -5,20 +5,31 @@ import time
 from ai.schemas import Ingredient, NutritionFacts
 from ai.nutrition import USDAProvider
 from src.config import settings
+from src.services import nutrition_cache
 
 logger = logging.getLogger(__name__)
 
-_SEMAPHORE = asyncio.Semaphore(settings.nutrition_concurrency_limit)
+# ← REMOVED: _SEMAPHORE = asyncio.Semaphore(settings.nutrition_concurrency_limit)
 
 
 async def _fetch_one(
     ingredient: Ingredient,
     provider: USDAProvider,
+    semaphore: asyncio.Semaphore,  # ← passed in, not module-level
 ) -> tuple[str, NutritionFacts | None]:
-    async with _SEMAPHORE:
+    async with semaphore:
         try:
+            cached = nutrition_cache.get(ingredient.name)
+            if cached is not None:
+                logger.debug("pipeline.cache_hit", extra={"ingredient": ingredient.name})
+                return ingredient.name, cached
+
             logger.debug("pipeline.fetch", extra={"ingredient": ingredient.name})
             facts = await asyncio.to_thread(provider.lookup, ingredient.name)
+
+            if facts is not None:
+                nutrition_cache.set(ingredient.name, facts, ttl=settings.cache_ttl_seconds)
+
             return ingredient.name, facts
         except Exception as e:
             logger.warning(
@@ -27,12 +38,17 @@ async def _fetch_one(
             )
             return ingredient.name, None
 
+
 async def fetch_nutrition_parallel(
     ingredients: list[Ingredient],
 ) -> dict[str, NutritionFacts]:
     t0 = time.monotonic()
+
+    # ← created lazily here, inside a running event loop — safe in all contexts
+    semaphore = asyncio.Semaphore(settings.nutrition_concurrency_limit)
+
     provider = USDAProvider(api_key=settings.usda_api_key)
-    tasks = [_fetch_one(ing, provider) for ing in ingredients]
+    tasks = [_fetch_one(ing, provider, semaphore) for ing in ingredients]
 
     logger.info("pipeline.start", extra={"total": len(ingredients)})
     results = await asyncio.gather(*tasks, return_exceptions=False)
