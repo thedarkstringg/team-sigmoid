@@ -1,3 +1,4 @@
+import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -5,10 +6,11 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     # AI Provider
-    llm_provider: str = "anthropic"
-    llm_model: str = "claude-sonnet-4-6"
+    llm_provider: str = "openai"
+    llm_model: str = "gpt-4o-mini"
     anthropic_api_key: str = ""
     openai_api_key: str = ""
+    openai_base_url: str = "https://openrouter.ai/api/v1"
     google_api_key: str = ""
 
     # Nutrition
@@ -36,3 +38,12 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+# Export to os.environ so ai/ providers pick them up via os.getenv
+os.environ.setdefault("LLM_PROVIDER", settings.llm_provider)
+os.environ.setdefault("LLM_MODEL", settings.llm_model)
+os.environ.setdefault("OPENAI_BASE_URL", settings.openai_base_url)
+os.environ.setdefault("OPENAI_API_KEY", settings.openai_api_key)
+os.environ.setdefault("ANTHROPIC_API_KEY", settings.anthropic_api_key)
+os.environ.setdefault("GOOGLE_API_KEY", settings.google_api_key)
+os.environ.setdefault("USDA_API_KEY", settings.usda_api_key)
