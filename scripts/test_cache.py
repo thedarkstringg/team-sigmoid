@@ -5,14 +5,35 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///./foodanalyzer.db")
-os.environ.setdefault("USDA_API_KEY", "YOUR USDA API KEY")
+
+def configure_env() -> None:
+    database_url = input(
+        "Enter DATABASE_URL or press Enter for sqlite default: "
+    ).strip()
+
+    if not database_url:
+        database_url = "sqlite+aiosqlite:///./foodanalyzer.db"
+
+    os.environ["DATABASE_URL"] = database_url
+
+    usda_api_key = input(
+        "Enter USDA_API_KEY or press Enter to skip: "
+    ).strip()
+
+    if usda_api_key:
+        os.environ["USDA_API_KEY"] = usda_api_key
+    else:
+        os.environ["USDA_API_KEY"] = ""
+
+    print("Environment configured.")
+
 
 from ai.schemas import NutritionFacts
 from src.services import nutrition_cache
 
 
 def main() -> None:
+    configure_env()
     nutrition_cache.clear()
 
     fake = NutritionFacts(
