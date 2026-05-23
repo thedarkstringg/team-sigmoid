@@ -7,6 +7,7 @@ from sqlalchemy import Integer, String, Float, Boolean, DateTime, Text, select
 
 from src.config import settings
 from src.models import AnalysisRecord, IngredientRow
+from src.storage.base import AbstractAnalysisRepository
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +30,7 @@ class MealAnalysis(Base):
     meal_recognized: Mapped[bool] = mapped_column(Boolean)
 
 
-class AnalysisRepository:
+class AnalysisRepository(AbstractAnalysisRepository):
     def __init__(self) -> None:
         self._engine = create_async_engine(settings.database_url, echo=False)
         self._session_factory = async_sessionmaker(
