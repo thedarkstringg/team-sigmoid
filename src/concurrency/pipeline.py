@@ -42,6 +42,7 @@ async def _fetch_one(
 async def fetch_nutrition_parallel(
     ingredients: list[Ingredient],
 ) -> dict[str, NutritionFacts]:
+    """Fetch nutrition facts concurrently and keep only successful ingredient lookups."""
     t0 = time.monotonic()
 
     # ← created lazily here, inside a running event loop — safe in all contexts

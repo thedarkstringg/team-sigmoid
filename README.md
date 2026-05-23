@@ -25,3 +25,18 @@ Result from local run:
 Speedup: **5.71x**
 
 The benchmark uses a fake USDA provider, so it runs offline and does not require API keys.
+
+<!-- coverage-report:start -->
+## Test coverage
+
+Latest coverage command:
+
+python -m pytest --cov=src --cov-report=term -q
+
+Latest src/ coverage result:
+
+TOTAL    302    55    82%
+
+Coverage is measured against src/ because ai/ contains external provider adapters that are not safe to exercise with real network/API calls in offline tests.
+
+<!-- coverage-report:end -->
