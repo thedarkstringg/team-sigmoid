@@ -5,7 +5,7 @@ from ai.schemas import Ingredient, NutritionFacts
 from ai.nutrition import USDAProvider
 from src.config import settings
 
-logger = logging.getLogger(name)
+logger = logging.getLogger(__name__)
 
 _SEMAPHORE = asyncio.Semaphore(settings.nutrition_concurrency_limit)
 
@@ -17,7 +17,7 @@ async def _fetch_one(
     async with _SEMAPHORE:
         try:
             logger.debug("pipeline.fetch", extra={"ingredient": ingredient.name})
-            facts = await asyncio.to_thread(provider.get_nutrition, ingredient.name)
+            facts = await asyncio.to_thread(provider.lookup, ingredient.name)
             return ingredient.name, facts
         except Exception as e:
             logger.warning(
