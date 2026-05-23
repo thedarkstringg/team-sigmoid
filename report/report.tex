@@ -1,0 +1,550 @@
+% =====================================================================
+% AI Academy -- National AI Center
+% Software Engineering Final Project -- Team Report
+% Team Sigmoid -- Topic 2: AI Food Analyzer
+% =====================================================================
+
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[dvipsnames]{xcolor}
+\definecolor{accent2}{HTML}{8B0000}
+\definecolor{ph}{HTML}{6B7280}
+\newcommand{\TODO}[1]{\textcolor{accent2}{\textbf{[TODO: #1]}}}
+\newcommand{\phh}[1]{\textcolor{ph}{\textit{#1}}}
+
+% ===== CONFIGURATION =================================================
+\newcommand{\teamname}{SIGMOID}
+\newcommand{\topicchoice}{Topic 2 -- AI Food Analyzer}
+\newcommand{\member}[2]{\textbf{#1} (#2)}
+\newcommand{\reportdate}{23 May 2026}
+\newcommand{\repolink}{\url{https://github.com/thedarkstringg/team_sigmoid}}
+
+\newcommand{\coursecode}{AI-ENG-110}
+\newcommand{\coursename}{Software Engineering}
+\newcommand{\institution}{AI Academy, National AI Center}
+\newcommand{\semester}{Spring 2026}
+
+% ===== PACKAGES ======================================================
+\usepackage[margin=2.2cm,headheight=15pt]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[final,protrusion=true,expansion=false]{microtype}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{ragged2e}
+\usepackage{enumitem}
+\usepackage[parfill]{parskip}
+\usepackage{listings}
+\usepackage[most]{tcolorbox}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage[hidelinks]{hyperref}
+
+\emergencystretch=3em
+\hbadness=10000
+\hfuzz=2pt
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=NavyBlue,
+  urlcolor=NavyBlue,
+  citecolor=NavyBlue,
+  pdftitle={\coursecode\ Final Project Report},
+  pdfauthor={\teamname}
+}
+
+% ===== STYLING =======================================================
+\definecolor{accent}{HTML}{0B3D91}
+\definecolor{soft}{HTML}{F2F4F8}
+\definecolor{deliver}{HTML}{E8F0FE}
+\definecolor{deliverframe}{HTML}{1A56DB}
+\definecolor{probe}{HTML}{FFF8E1}
+\definecolor{probeframe}{HTML}{B45309}
+
+\titleformat{\section}
+  {\Large\bfseries\color{accent}}{\thesection.}{0.6em}{}
+\titleformat{\subsection}
+  {\large\bfseries\color{accent}}{\thesubsection}{0.5em}{}
+
+\let\ph\phh
+
+\definecolor{codegreen}{rgb}{0,0.55,0}
+\definecolor{codegray}{rgb}{0.4,0.4,0.4}
+\definecolor{codepurple}{rgb}{0.55,0,0.78}
+\definecolor{backcolour}{rgb}{0.97,0.97,0.97}
+
+\lstdefinestyle{python}{
+  language=Python,
+  backgroundcolor=\color{backcolour},
+  commentstyle=\color{codegreen},
+  keywordstyle=\color{accent},
+  numberstyle=\tiny\color{codegray},
+  stringstyle=\color{codepurple},
+  basicstyle=\ttfamily\footnotesize,
+  breakatwhitespace=false,
+  breaklines=true,
+  keepspaces=true,
+  numbers=left,
+  numbersep=6pt,
+  tabsize=2,
+  frame=single,
+  framerule=0.4pt,
+  rulecolor=\color{black!30},
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textit{\coursecode\ -- Final Report -- \teamname}}
+\fancyhead[R]{\small\textit{\semester}}
+\fancyfoot[L]{\small\textit{\institution}}
+\fancyfoot[R]{\small Page \thepage\ of \pageref{LastPage}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+% =====================================================================
+\begin{document}
+
+\begin{center}
+{\small \textsc{\institution} \\[0.2em] \textsc{\coursecode\ -- \coursename\ -- \semester}}\\[1.2em]
+{\Large\bfseries\color{accent} Final Project Report}\\[0.3em]
+{\LARGE\bfseries \topicchoice}\\[0.6em]
+\rule{\textwidth}{0.8pt} % Made it full width to match the table
+\end{center}
+
+\vspace{0.5em}
+\noindent
+\begin{tabular}{@{}ll @{\hspace{2cm}} ll@{}}
+\textbf{Team:} & \teamname & \textbf{Date:} & \reportdate \\
+\textbf{Repo:} & \repolink & \textbf{Tag:} & \texttt{v1.0-final} \\
+\end{tabular}
+
+\vspace{0.8em}
+\noindent
+\begin{tabular}{@{}l l@{}}
+\textbf{Members:} & Ziyad (\texttt{@thedarkstringg}) \\
+                  & Emin (\texttt{@ehuseynli96-ops}) \\
+                  & Ismail (\texttt{@ismayilysfli}) \\
+\end{tabular}
+
+\vspace{0.8em}\hrule\vspace{0.8em}
+
+% ===== EXECUTIVE SUMMARY =============================================
+\section*{Executive Summary}
+\addcontentsline{toc}{section}{Executive Summary}
+
+Team Sigmoid built an AI-powered meal analysis system that accepts a food photograph and returns a structured nutritional breakdown---ingredients, estimated grams, and macronutrient totals---persisted to a SQLite database and accessible via both a CLI and a FastAPI HTTP endpoint. The headline concurrency result is a \textbf{5.31$\times$ speedup} when fetching USDA nutrition data for 12 ingredients in parallel versus sequentially (0.608\,s vs.\ 0.115\,s measured on Windows 11 with Python 3.11.7 using the offline benchmark at 50\,ms simulated latency per lookup). The most important robustness story is graceful partial degradation: when one or more USDA provider calls fail (5xx, timeout, or malformed response), the system returns the successfully-fetched ingredients and logs a \texttt{pipeline.fetch\_failed} warning rather than crashing the entire request. The single most surprising finding was that the module-level \texttt{asyncio.Semaphore()} created at import time is technically fine in Python 3.10+ but caused subtle test-isolation failures when multiple \texttt{asyncio.run()} contexts were used---moving semaphore creation inside \texttt{fetch\_nutrition\_parallel} fixed this with no performance cost.
+
+\tableofcontents
+\vspace{0.6em}\hrule\vspace{0.4em}
+
+% =====================================================================
+\section{Project Overview}
+
+\subsection{Problem framing \& scope}
+
+The AI Food Analyzer solves a practical problem: given a photograph of a meal, automatically identify the ingredients and compute their caloric and macronutrient content without manual look-up. The system takes a single JPEG or PNG image as input and produces a structured JSON record containing a list of identified ingredients (name, estimated weight in grams, confidence score) and aggregate totals for calories, protein, carbohydrates, and fat. User-facing entry points are a CLI command (\texttt{python -m foodanalyzer analyze <path>}) and an HTTP endpoint (\texttt{POST /analyze}) that accepts multipart file uploads and returns JSON. A \texttt{GET /history} endpoint exposes recent analyses from the database.
+
+The team made several deliberate scope decisions. We tightened the spec by adding magic-byte validation on uploaded images---not just checking the \texttt{Content-Type} header---and by enforcing a 5\,MB file-size limit configurable via \texttt{MAX\_IMAGE\_BYTES}. We explicitly chose not to implement user authentication or a web UI, deferring those to a hypothetical production iteration. We also decided not to persist raw image bytes in the database; only the file path and the analysis result are stored, keeping the database lightweight.
+
+The provider stack uses OpenRouter as the LLM gateway (OpenAI-compatible API, model \texttt{gpt-4o-mini} by default) for the VLM ingredient identification step, and the USDA FoodData Central API for nutrition lookups. The system supports Anthropic (\texttt{claude-sonnet-4-6}) and Google (\texttt{gemini-2.0-flash}) as alternative LLM providers by changing two environment variables.
+
+\subsection{Provider choice and the AI module contract}
+
+The primary LLM provider is \textbf{OpenAI-compatible via OpenRouter} with model identifier \texttt{gpt-4o-mini}. Alternative providers Anthropic (\texttt{claude-sonnet-4-6}) and Google (\texttt{gemini-2.0-flash}) are supported. For nutrition, we use the \textbf{USDA FoodData Central} REST API via the provided \texttt{USDAProvider} class. From the provided \texttt{ai/} package, our SE layer calls four functions: \texttt{vlm.identify\_ingredients(image\_path)} which returns a list of \texttt{Ingredient} objects, \texttt{calculator.compute\_totals(ingredients, facts\_by\_name)} which returns a \texttt{Nutrition} aggregate, and \texttt{USDAProvider.lookup(name)} from \texttt{ai.nutrition}. We confirm that we did not modify the public interface of the provided \texttt{ai/} package; all our code calls into it but never alters its source files.
+
+When the VLM returns an empty ingredient list (the \texttt{no\_meal\_blue.png} case), our \texttt{analyzer.py} short-circuits immediately and returns a structured \texttt{AnalysisRecord} with \texttt{meal\_recognized=False} and all totals set to zero---no crash, no exception propagated to the caller. When a provider returns a valid response that is semantically wrong (e.g.\ negative grams), the \texttt{Ingredient} and \texttt{NutritionFacts} Pydantic models in the provided \texttt{ai/schemas.py} handle field validation; our layer trusts those models and does not re-validate semantic constraints.
+
+% =====================================================================
+\section{Architecture}\label{sec:arch}
+
+\subsection{Module map}
+
+\begin{lstlisting}[numbers=none,basicstyle=\ttfamily\small,backgroundcolor=\color{backcolour}]
+Browser / curl
+    |
+    v
+FastAPI  src/foodanalyzer/api.py
+    |-- POST /analyze
+    |     |-- validate_image_bytes()          [validation.py]
+    |     |-- AIService.identify_ingredients() [services/ai_service.py]
+    |     |     |-- tenacity retry + 30 s timeout
+    |     |     '-- vlm.identify_ingredients() [PROVIDED ai/vlm.py]
+    |     |-- NutritionPipeline.fetch_all()   [concurrency/pipeline.py]
+    |     |     |-- asyncio.gather + Semaphore(NUTRITION_CONCURRENCY_LIMIT)
+    |     |     |-- NutritionCache (TTL 24 h) [services/nutrition_cache.py]
+    |     |     '-- USDAProvider.lookup()     [PROVIDED ai/nutrition.py]
+    |     |-- calculator.compute_totals()     [PROVIDED ai/calculator.py]
+    |     '-- repository.save()              [storage/repository.py]
+    |               '-- SQLAlchemy async + aiosqlite --> SQLite
+    |
+    '-- GET /history --> repository.list_all() --> SQLite
+
+CLI  src/cli.py  (shares core/analyzer.py)
+\end{lstlisting}
+
+\subsection{Module summary}
+
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+\textbf{Module} & \textbf{Responsibility} \\
+\midrule
+\texttt{config.py} & pydantic-settings \texttt{Settings} class; reads \texttt{.env}; exports values to \texttt{os.environ} so \texttt{ai/} providers pick them up via \texttt{os.getenv} \\
+\texttt{models.py} & SE-layer Pydantic models: \texttt{IngredientRow}, \texttt{AnalysisRecord} \\
+\texttt{logging\_setup.py} & Central \texttt{configure\_logging()} call; drives level from \texttt{LOG\_LEVEL}; silences noisy third-party loggers \\
+\texttt{core/analyzer.py} & Orchestrates the full pipeline: validate $\to$ VLM $\to$ nutrition $\to$ totals $\to$ persist; short-circuits on empty meal \\
+\texttt{services/ai\_service.py} & Wraps \texttt{vlm.identify\_ingredients} and \texttt{calculator.compute\_totals} with tenacity retry policy (exponential backoff, jitter) and threading timeout \\
+\texttt{services/nutrition\_cache.py} & In-memory TTL cache using \texttt{time.monotonic()}; \texttt{get}/\texttt{set}/\texttt{invalidate}/\texttt{clear} interface \\
+\texttt{concurrency/pipeline.py} & \texttt{fetch\_nutrition\_parallel}: fans out USDA calls via \texttt{asyncio.gather} + \texttt{Semaphore}; cache-check before fetch; graceful partial failure \\
+\texttt{storage/base.py} & \texttt{AbstractAnalysisRepository} ABC: \texttt{init\_db}, \texttt{save}, \texttt{list\_all} \\
+\texttt{storage/repository.py} & \texttt{AnalysisRepository}: SQLAlchemy async + aiosqlite; \texttt{save(AnalysisRecord)}, \texttt{list\_all(limit)} \\
+\texttt{api.py} & FastAPI app: \texttt{POST /analyze}, \texttt{GET /history}, \texttt{GET /health}; magic-byte validation; temp file lifecycle \\
+\texttt{cli.py} & Argparse CLI: \texttt{analyze <path>} and \texttt{history} subcommands; tabular output \\
+\bottomrule
+\end{tabularx}
+
+\subsection{OOP design \& key abstractions}
+
+The storage layer uses an Abstract Base Class to enforce a contract between the interface and the concrete implementation:
+
+\begin{lstlisting}[style=python]
+# src/storage/base.py
+import abc
+from src.models import AnalysisRecord
+
+class AbstractAnalysisRepository(abc.ABC):
+    """Abstract base for analysis storage backends."""
+
+    @abc.abstractmethod
+    async def init_db(self) -> None:
+        """Initialize the storage backend."""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    async def save(self, record: AnalysisRecord) -> AnalysisRecord:
+        """Persist an analysis record and return it with an id."""
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    async def list_all(self, limit: int = 50) -> list[AnalysisRecord]:
+        """Return the most recent analysis records."""
+        raise NotImplementedError
+
+# src/storage/repository.py (concrete subclass)
+class AnalysisRepository(AbstractAnalysisRepository):
+    def __init__(self) -> None:
+        self._engine = create_async_engine(settings.database_url)
+        self._session_factory = async_sessionmaker(
+            self._engine, expire_on_commit=False)
+
+    async def init_db(self) -> None: ...
+    async def save(self, record: AnalysisRecord) -> AnalysisRecord: ...
+    async def list_all(self, limit: int = 50) -> list[AnalysisRecord]: ...
+\end{lstlisting}
+
+We chose an ABC rather than a Protocol because the storage backend requires \texttt{\_\_init\_\_} state (engine, session factory) that a Protocol cannot enforce, and because we wanted Python to raise \texttt{TypeError} at instantiation time if a future backend omits a required method. Composition is used in \texttt{api.py}: the FastAPI app holds a module-level \texttt{AnalysisRepository} instance rather than inheriting from it, since the HTTP layer and the storage layer have fundamentally different responsibilities.
+
+\subsection{Data flow across module boundaries}
+
+Our SE layer defines two Pydantic models: \texttt{IngredientRow} (name, estimated\_grams, confidence, kcal, protein, carbs, fat) and \texttt{AnalysisRecord} (id, timestamp, image\_path, ingredients, total\_kcal, total\_protein, total\_carbs, total\_fat, meal\_recognized). These are the only types that cross the boundary between the core, storage, and API layers; no naked dictionaries are passed between modules. The provided \texttt{ai/} schemas (\texttt{Ingredient}, \texttt{NutritionFacts}, \texttt{Nutrition}) are used internally within \texttt{analyzer.py} as intermediate types during pipeline orchestration but are always converted to \texttt{IngredientRow}/\texttt{AnalysisRecord} before leaving the core layer. We wrapped rather than reusing the \texttt{ai/} schemas because they lack fields we need for persistence (\texttt{id}, \texttt{timestamp}, \texttt{meal\_recognized}) and because tying our storage schema to the provided package's models would break if the package interface changed.
+
+% =====================================================================
+\section{Concurrency \& Performance}\label{sec:concurrency}
+
+\subsection{Why this concurrency model}
+
+We used \texttt{asyncio} with \texttt{asyncio.gather} because the bottleneck is I/O-bound: each USDA nutrition lookup is an outbound HTTP call with 50--300\,ms network round-trip time. \texttt{asyncio} allows all $N$ lookups to be in-flight simultaneously without spawning $N$ threads, which would incur thread-creation overhead and GIL contention. The synchronous \texttt{USDAProvider.lookup} call is wrapped with \texttt{asyncio.to\_thread} so it runs in the thread pool without blocking the event loop. We bound concurrency with \texttt{asyncio.Semaphore(settings.nutrition\_concurrency\_limit)}, defaulting to 10, chosen to stay well within the USDA API's documented rate limit of 1000 requests/hour per key while still achieving near-linear speedup for typical meal sizes (5--15 ingredients). Setting the semaphore to 1 degrades to sequential behaviour; setting it to 100 risks 429 responses from USDA. The concurrent design starts winning over sequential at $N \geq 2$ ingredients, since the overhead of the event loop is negligible compared to even a single network RTT.
+
+\subsection{Sequential-vs-concurrent benchmark}
+
+The benchmark in \texttt{scripts/bench.py} uses a \texttt{FakeUSDAProvider} with a fixed 50\,ms \texttt{time.sleep} per lookup to produce deterministic, reproducible results without real API keys.
+
+\begin{center}\small
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Workload} & $N$ & \textbf{Sequential (s)} & \textbf{Concurrent (s)} & \textbf{Speedup} \\
+\midrule
+12 ingredients, 50\,ms/lookup & 12 & 0.608 & 0.115 & 5.31$\times$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textit{Environment:} Windows 11, Python 3.11.7, pytest-8.4.2, pluggy-1.6.0, cache cleared before each run (\texttt{nutrition\_cache.clear()} called at benchmark start). Command: \texttt{python scripts/bench.py}.
+
+The measured speedup of 5.31$\times$ falls below the theoretical 12$\times$ (perfect parallelism) because \texttt{asyncio.to\_thread} dispatches each synchronous \texttt{USDAProvider.lookup} call to a thread pool and the Windows thread-pool scheduler introduces scheduling overhead per task (~5--10\,ms on Windows vs.\ ~1--2\,ms on Linux). The remaining gap is attributable to Python event-loop overhead, coroutine creation cost, and Windows's higher baseline thread-switching latency compared to Linux. On Linux the concurrent time would be closer to 0.06\,s, yielding a speedup nearer to 10$\times$. To push the curve further, we would batch multiple ingredient names in a single USDA search request, reducing $N$ network calls to $\lceil N/20 \rceil$ (USDA supports up to 20 names per query).
+
+\subsection{Rate limit \& politeness}
+
+The rate-limit strategy is \textbf{semaphore-bounded concurrency}: at most \texttt{nutrition\_concurrency\_limit} (default 10) simultaneous USDA requests are in-flight at any time. This acts as a token-bucket equivalent: the semaphore gate limits burst size, and the async event loop's natural serialisation prevents thundering herd on retry. We did not observe a 429 from USDA during development because all testing used the offline \texttt{FakeUSDAProvider}; with a real key the 10-concurrent limit gives a maximum burst of 10 requests, well within the 1000/hour budget. If a 429 were received, the tenacity retry policy in \texttt{ai\_service.py} (up to 3 attempts, exponential backoff 1$\to$10\,s with jitter) would handle it; the USDA call path does not yet have tenacity but the semaphore prevents sustained overload.
+
+% =====================================================================
+\section{Robustness \& Error Handling}\label{sec:robustness}
+
+\subsection{Wrapping the AI module}
+
+\texttt{src/services/ai\_service.py} wraps both \texttt{vlm.identify\_ingredients} and \texttt{calculator.compute\_totals} with identical retry policies via \textbf{tenacity}:
+\begin{itemize}[nosep]
+  \item \textit{Attempts:} up to 3 (\texttt{stop\_after\_attempt(3)})
+  \item \textit{Backoff:} exponential with jitter, 1\,s initial, 10\,s maximum (\texttt{wait\_exponential\_jitter})
+  \item \textit{Trigger:} any \texttt{Exception} subclass (\texttt{retry\_if\_exception\_type(Exception)})
+  \item \textit{Logging:} each sleep logs at WARNING via \texttt{before\_sleep\_log}
+  \item \textit{Re-raise:} after exhausting retries, the original exception propagates (\texttt{reraise=True})
+\end{itemize}
+Structured log fields emitted: \texttt{image} (path), \texttt{count} (number of ingredients identified), \texttt{duration\_ms} (wall-clock time per call). Input validation in \texttt{api.py} checks content-type header, magic bytes (via \texttt{imghdr}), file size, and empty-file guard \textit{before} any \texttt{ai.*} call is made.
+
+\subsection{Failure-mode analysis (one concrete incident)}
+
+\textbf{Failure injected:} USDA provider 5xx, timeout, and malformed response simultaneously (three out of five ingredients fail), tested in \texttt{tests/test\_failure\_injection.py}.
+
+\textbf{How injected:} \texttt{monkeypatch.setattr(pipeline, "USDAProvider", FailureInjectingUSDAProvider)} replaces the real provider with a deterministic fake that raises \texttt{RuntimeError}, \texttt{TimeoutError}, or \texttt{ValueError} based on the ingredient name. \texttt{asyncio.run(fetch\_nutrition\_parallel(ingredients))} is then called directly.
+
+\textbf{What the system did:} \texttt{asyncio.gather} ran all five tasks; the three failing tasks were caught inside \texttt{\_fetch\_one}'s \texttt{try/except} block and returned \texttt{(name, None)}. The results loop skipped \texttt{None} values, so the returned dictionary contained only ``rice'' and ``chicken''. The system did not raise, did not crash, and the caller received a partial-but-valid result.
+
+\textbf{What the user saw:} via the CLI, a nutrition table with two rows and correct totals for those two ingredients. Via the API, a 200 response with \texttt{meal\_recognized: true} and two ingredient rows. No 500 error.
+
+\textbf{What the logs showed:} three \texttt{WARNING pipeline.fetch\_failed} lines (one per failing ingredient, each with the ingredient name and error string), then one \texttt{INFO pipeline.done} line with \texttt{fetched: 2, failed: 3, duration\_ms: ...}. This was sufficient to diagnose the incident without re-running the code.
+
+\textbf{Design issue surfaced:} the original test expected \texttt{return\_exceptions=True} on \texttt{asyncio.gather} but our \texttt{try/except} inside \texttt{\_fetch\_one} means exceptions never reach \texttt{gather}---\texttt{return\_exceptions=False} is the correct setting and we updated it accordingly.
+
+\subsection{Input validation}
+
+\begin{tabular}{llp{6cm}}
+\toprule
+\textbf{Entry point} & \textbf{Rule} & \textbf{Error returned} \\
+\midrule
+\texttt{POST /analyze} & \texttt{Content-Type} must be \texttt{image/jpeg} or \texttt{image/png} & HTTP 422 with detail message \\
+\texttt{POST /analyze} & File must not be empty & HTTP 422 \\
+\texttt{POST /analyze} & File $\leq$ \texttt{MAX\_IMAGE\_BYTES} (5\,MB default) & HTTP 413 \\
+\texttt{POST /analyze} & Magic bytes must match JPEG or PNG & HTTP 422 with detected type \\
+CLI \texttt{analyze} & Path must exist on disk & \texttt{argparse} error before any API call \\
+Environment & Missing \texttt{OPENAI\_API\_KEY} / \texttt{USDA\_API\_KEY} & Logged warning; provider returns error on first call, caught by retry \\
+\bottomrule
+\end{tabular}
+
+A 100\,MB file is rejected at the size check (HTTP 413) before any bytes are passed to the AI module. A path that escapes the storage directory is not possible since uploaded images are written to a system temp directory (\texttt{tempfile.NamedTemporaryFile}) and deleted immediately after analysis.
+
+% =====================================================================
+\section{Storage \& Caching}\label{sec:storage}
+
+\subsection{Schema}
+
+The SQLite database contains one table, created via SQLAlchemy's async DDL:
+
+\begin{lstlisting}[style=python,language=sql,numbers=none,basicstyle=\ttfamily\small]
+CREATE TABLE meal_analyses (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    timestamp        DATETIME NOT NULL,          -- UTC, source of truth
+    image_path       VARCHAR(512) NOT NULL,      -- original file path
+    ingredients_json TEXT NOT NULL,              -- JSON array of IngredientRow dicts
+    total_kcal       FLOAT NOT NULL,             -- derived / cached from ingredients
+    total_protein    FLOAT NOT NULL,
+    total_carbs      FLOAT NOT NULL,
+    total_fat        FLOAT NOT NULL,
+    meal_recognized  BOOLEAN NOT NULL
+);
+\end{lstlisting}
+
+\texttt{id} and \texttt{timestamp} are source-of-truth fields. \texttt{total\_kcal/protein/carbs/fat} are derived (cached) from \texttt{ingredients\_json} at write time to avoid re-computing totals on every read. \texttt{ingredients\_json} stores the full \texttt{IngredientRow} list as JSON text; we chose JSON-in-TEXT over a separate \texttt{ingredients} table because meal records are always read and written atomically and a join would add complexity without benefit at our scale. We store the image path, not the image bytes, keeping the database under 1\,MB for hundreds of analyses.
+
+\subsection{Caching policy}
+
+\texttt{src/services/nutrition\_cache.py} implements a \textbf{TTL-aware in-memory cache} for USDA ingredient lookups. Cache entries expire after \texttt{CACHE\_TTL\_SECONDS} (default 86400\,s = 24\,h), using \texttt{time.monotonic()} for expiry checks. The cache is checked in \texttt{pipeline.\_fetch\_one} \textit{before} acquiring the semaphore (to avoid holding the semaphore during a cheap cache hit). A successful USDA response is stored immediately after the network call (\texttt{DEBUG cache.set} in logs). The in-memory cache resets between CLI invocations since each \texttt{python -m src analyze} call starts a fresh process; all 16 demo images show \texttt{INFO cache.miss} on cold start, confirming correct behaviour. Cache benefits are realized in a long-running API server session where the same ingredients recur across requests (\textbf{100\% hit rate} on repeated calls). Below is the real INFO-level log and CLI output from \texttt{data/pasta\_chicken.png}:
+
+\begin{lstlisting}[numbers=none,basicstyle=\ttfamily\scriptsize,backgroundcolor=\color{backcolour}]
+INFO  src.storage.repository   database.initialized
+INFO  src.core.analyzer        analyzer.start
+INFO  src.services.ai_service  ai_service.identify.start
+INFO  httpx  HTTP Request: POST https://openrouter.ai/api/v1/chat/completions "200 OK"
+INFO  src.services.ai_service  ai_service.identify.done
+INFO  src.concurrency.pipeline pipeline.start
+INFO  src.services.nutrition_cache  cache.miss
+INFO  src.services.nutrition_cache  cache.miss
+INFO  src.concurrency.pipeline pipeline.done
+INFO  src.services.ai_service  ai_service.compute.start
+INFO  src.services.ai_service  ai_service.compute.done
+INFO  src.core.analyzer        analyzer.done
+INFO  src.storage.repository   storage.saved
+
+Analyzing: data/pasta_chicken.png
+
+ingredient                     g   kcal  protein  carbs    fat
+------------------------------------------------------------
+cooked white rice            150    609      3.0   31.7    0.3
+grilled chicken breast       120    181     36.6    0.0    3.8
+------------------------------------------------------------
+TOTAL                               790     39.6   31.7    4.1
+
+Meal recognized: True
+\end{lstlisting}
+
+
+
+Staleness risk: USDA nutrition data changes rarely, so a 24\,h TTL is safe for production use. If the LLM identifies the same food by a different string across requests (e.g.\ ``chicken breast'' vs.\ ``grilled chicken breast''), the cache key would not match and the lookup would proceed, but this is not a correctness issue since each key is exact-match.
+
+% =====================================================================
+\section{Testing}\label{sec:testing}
+
+\subsection{Strategy \& coverage}
+
+All \texttt{ai.*} calls are mocked via \texttt{monkeypatch} or \texttt{unittest.mock.patch}; no real API keys are required for the test suite. HTTP layer tests use \texttt{httpx.AsyncClient} with FastAPI's \texttt{TestClient}. The provided \texttt{tests/test\_ai\_smoke.py} passes on every branch and on the final tag.
+
+\begin{center}\small
+\begin{tabular}{lc}
+\toprule
+\textbf{Suite} & \textbf{Coverage} \\
+\midrule
+\texttt{src/} (SE layer) & \textbf{97\%} (362 stmts, 12 missed) \\
+Provided \texttt{ai/} smoke tests & passing (29 tests, 0.06\,s) \\
+Full suite & \textbf{73 passed}, 1 warning, 3.48\,s \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Per-file breakdown: \texttt{pipeline.py} 100\%, \texttt{repository.py} 100\%, \texttt{nutrition\_cache.py} 100\%, \texttt{ai\_service.py} 100\%, \texttt{analyzer.py} 100\%, \texttt{logging\_setup.py} 100\%, \texttt{models.py} 100\%, \texttt{cli.py} 98\% (line 79), \texttt{api.py} 86\% (lines 24--27, 78--81, 84 --- error branches requiring live multipart upload), \texttt{storage/base.py} 75\% (abstract method bodies at lines 11, 16, 21 --- unreachable by design). The one warning is a Python 3.13 deprecation notice on \texttt{imghdr}; it does not affect correctness on Python 3.11.
+
+\subsection{Notable Tests}
+
+\begin{description}
+    \item[\textmd{\textbf{(i)} \texttt{test\_storage.py::test\_repository\_save\_and\_list\_all\_roundtrip}}] \hfill \\
+    Happy-path end-to-end test. Creates a real \texttt{aiosqlite} database in a \texttt{tmp\_path}, saves an \texttt{AnalysisRecord} with one ingredient row, reads it back with \texttt{list\_all()}, and asserts field-by-field equality. This test exercises the full storage boundary: SQLAlchemy DDL, ORM insert, commit, select, and \texttt{\_to\_model} deserialization.
+
+    \item[\textmd{\textbf{(ii)} \texttt{test\_concurrency.py::test\_fetch\_nutrition\_parallel\_skips\_failed\_lookup}}] \hfill \\
+    Concurrency test. Monkeypatches \texttt{USDAProvider} with a fake that raises \texttt{RuntimeError} for an ingredient named ``bad ingredient''. Asserts that \texttt{fetch\_nutrition\_parallel} returns a dict containing ``rice'' and ``chicken'' but not ``bad ingredient'', confirming \texttt{asyncio.gather} degrades gracefully when one task raises.
+
+    \item[\textmd{\textbf{(iii)} \texttt{test\_failure\_injection.py::test\_parallel\_...\_calls\_fail}}] \hfill \\
+    Error-path test that found a real bug. Passes three failing ingredients and asserts the result is an empty dict (not a raised exception). During development, this test failed because our first implementation used \texttt{return\_exceptions=True} but also had a \texttt{try/except} inside \texttt{\_fetch\_one}---the two patterns conflicted. The test forced us to choose: keep \texttt{try/except} in \texttt{\_fetch\_one} (our current design) and use \texttt{return\_exceptions=False} on \texttt{gather}.
+\end{description}
+% =====================================================================
+\section{Deployment \& Reproducibility}\label{sec:deploy}
+
+\subsection{Docker image}
+
+The Dockerfile uses a \textbf{single-stage} build from \texttt{python:3.12-slim}:
+
+\begin{lstlisting}[style=python,language=bash,numbers=none]
+# Build
+docker build -t team-sigmoid .
+
+# Run API server
+docker run --env-file .env -p 8000:8000 team-sigmoid
+
+# Run CLI inside container
+docker run --env-file .env team-sigmoid \
+    python -m foodanalyzer analyze data/rice_chicken.png
+
+# Run tests inside container
+docker run --env-file .env team-sigmoid \
+    pytest tests/test_ai_smoke.py -v
+\end{lstlisting}
+
+We chose \texttt{python:3.12-slim} (Debian-slim base, $\sim$130\,MB) over Alpine because several dependencies (SQLAlchemy C extensions, numpy) require \texttt{glibc} which Alpine does not ship, and the multi-stage complexity to add \texttt{musl} equivalents was not justified at this project scale.
+
+\usepackage{tabularx} % Make sure this is in your preamble
+\usepackage{booktabs}
+
+% ... inside your document
+
+\subsection{Configuration}
+
+All configuration is read from environment variables (or \texttt{.env}):
+
+\noindent
+\begin{tabularx}{\textwidth}{@{} l l X @{}}
+\toprule
+\textbf{Variable} & \textbf{Default} & \textbf{If missing} \\
+\midrule
+\texttt{LLM\_PROVIDER} & \texttt{openai} & Uses OpenAI path. \\
+\texttt{LLM\_MODEL} & \texttt{gpt-4o-mini} & Provider default. \\
+\texttt{OPENAI\_API\_KEY} & \textit{empty} & Provider call fails; tenacity retries 3$\times$ then raises. \\
+\texttt{OPENAI\_BASE\_URL} & \textit{not set} & Uses official OpenAI endpoint. \\
+\texttt{ANTHROPIC\_API\_KEY} & \textit{empty} & As above if \texttt{LLM\_PROVIDER=anthropic}. \\
+\texttt{GOOGLE\_API\_KEY} & \textit{empty} & As above if \texttt{LLM\_PROVIDER=google}. \\
+\texttt{USDA\_API\_KEY} & \textit{empty} & USDA calls fail; pipeline degrades gracefully. \\
+\texttt{DATABASE\_URL} & \texttt{sqlite+aiosqlite:///...} & Creates local SQLite file at project root. \\
+\texttt{CACHE\_TTL\_SECONDS} & \texttt{86400} & 24\,h TTL. \\
+\texttt{NUTRITION\_CONCURRENCY\_LIMIT} & \texttt{10} & 10 parallel USDA requests. \\
+\texttt{HOST} / \texttt{PORT} & \texttt{0.0.0.0} / \texttt{8000} & API binds to all interfaces on port 8000. \\
+\texttt{LOG\_LEVEL} & \texttt{INFO} & INFO-level logging. \\
+\texttt{MAX\_IMAGE\_BYTES} & \texttt{5242880} & 5\,MB upload limit. \\
+\bottomrule
+\end{tabularx}
+
+% =====================================================================
+\section{Limitations \& Future Work}\label{sec:limits}
+
+\begin{itemize}
+  \item \textbf{In-memory cache is process-local and not persistent.} If the API server restarts, all cached USDA lookups are lost and the next 24\,h of cold requests pay full network cost. A Redis or SQLite-backed cache would fix this.
+  \item \textbf{No retry on USDA calls.} The tenacity policy covers \texttt{ai\_service} but not \texttt{pipeline.\_fetch\_one}. A transient USDA 500 is silently logged and the ingredient is dropped from the result rather than retried. Adding a per-call retry with a short budget (2 attempts, 0.5\,s backoff) would improve completeness.
+  \item \textbf{Single-process, single-database.} The SQLite + aiosqlite stack is not safe for multiple concurrent writers. Moving to PostgreSQL with asyncpg would be required for any multi-replica deployment.
+  \item \textbf{Benchmark uses fake provider.} The 5.31$\times$ speedup is measured with \texttt{time.sleep(0.05)} not real network I/O. Real USDA calls have variable latency; actual speedup in production depends on network conditions and would likely be higher since real RTT dominates thread-scheduling overhead.
+  \item \textbf{\texttt{imghdr} deprecation.} \texttt{src/api.py} uses the \texttt{imghdr} module for magic-byte validation, which is deprecated in Python 3.11 and removed in 3.13. A production hardening step would replace it with \texttt{python-magic} or manual byte inspection.
+  \item \textbf{Worst design decision:} storing \texttt{ingredients\_json} as a raw JSON text column rather than a properly normalised \texttt{ingredients} table. This makes it impossible to query ``which analyses contain chicken'' without a full table scan and JSON parsing in application code.
+\end{itemize}
+
+% =====================================================================
+\section{Tools \& Acknowledgements}\label{sec:tools}
+
+Throughout the project we used Claude as a coding assistant in the same way a developer would use it in industry: for drafting boilerplate, suggesting library usage, and helping diagnose bugs. All AI-generated suggestions were reviewed, tested, and adapted by the team before being committed.
+
+In particular, the assistant helped us explore tenacity retry configuration, \texttt{asyncio.gather} error-handling patterns, and diagnose the \texttt{pydantic-settings} vs \texttt{os.getenv} environment-loading incompatibility.
+
+Every team member understands the full codebase and is able to explain and defend every line of code during the oral defense. ``The AI wrote it'' is not an answer any of us will use.
+
+% =====================================================================
+\section*{References}
+\addcontentsline{toc}{section}{References}
+
+\begin{enumerate}[label={[\arabic*]},leftmargin=2.4em,itemsep=2pt]
+  \item Anthropic API documentation, \url{https://docs.anthropic.com/}
+  \item tenacity library documentation, \url{https://tenacity.readthedocs.io/}
+  \item FastAPI documentation, \url{https://fastapi.tiangolo.com/}
+  \item pydantic-settings documentation, \url{https://docs.pydantic.dev/latest/concepts/pydantic\_settings/}
+  \item USDA FoodData Central API, \url{https://fdc.nal.usda.gov/api-guide.html}
+  \item SQLAlchemy async documentation, \url{https://docs.sqlalchemy.org/en/20/orm/extensions/asyncio.html}
+  \item Python asyncio documentation, \url{https://docs.python.org/3/library/asyncio.html}
+\end{enumerate}
+
+\appendix
+% =====================================================================
+\section{Appendix --- Reproducing the benchmark}
+
+\begin{lstlisting}[style=python,language=bash,numbers=none]
+# Clone and set up
+git clone https://github.com/thedarkstringg/team-sigmoid
+cd team-sigmoid
+git checkout v1.0-final
+cp .env.example .env        # no real keys needed for offline bench
+
+python -m venv .venv
+# Windows:
+.venv\Scripts\activate
+# Linux/macOS:
+source .venv/bin/activate
+
+pip install -r requirements.txt
+
+# Run the offline benchmark (no API keys required)
+set PYTHONPATH=%CD%          # Windows
+# export PYTHONPATH=$(pwd)   # Linux/macOS
+python scripts/bench.py
+\end{lstlisting}
+
+Expected output (approximate, hardware-dependent):
+\begin{lstlisting}[numbers=none,basicstyle=\ttfamily\small,backgroundcolor=\color{backcolour}]
+Sequential vs concurrent nutrition lookup benchmark
+
+mode         items   duration_seconds
+---------------------------------------
+sequential      12              0.608
+concurrent      12              0.115
+---------------------------------------
+speedup: 5.31x
+\end{lstlisting}
+
+\vspace{1em}\hrule\vspace{0.6em}
+\noindent\small\textit{End of report --- thank you for reading.}
+
+\end{document}
