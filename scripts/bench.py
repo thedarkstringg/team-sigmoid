@@ -23,7 +23,7 @@ class FakeUSDAProvider:
     def __init__(self, api_key: str | None = None) -> None:
         self.api_key = api_key
 
-    def get_nutrition(self, ingredient_name: str) -> NutritionFacts:
+    def lookup(self, ingredient_name: str) -> NutritionFacts:
         time.sleep(DELAY_SECONDS)
         base = 50 + (sum(ord(ch) for ch in ingredient_name) % 100)
         return NutritionFacts(
@@ -54,7 +54,7 @@ def fetch_nutrition_sequential(
     facts_by_name: dict[str, NutritionFacts] = {}
 
     for ingredient in ingredients:
-        facts_by_name[ingredient.name] = provider.get_nutrition(ingredient.name)
+        facts_by_name[ingredient.name] = provider.lookup(ingredient.name)
 
     return facts_by_name
 
