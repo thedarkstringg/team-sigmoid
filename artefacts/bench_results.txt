@@ -1,0 +1,8 @@
+Sequential vs concurrent nutrition lookup benchmark
+
+mode         items   duration_seconds
+---------------------------------------
+sequential      12              0.606
+concurrent      12              0.121
+---------------------------------------
+speedup: 5.02x
