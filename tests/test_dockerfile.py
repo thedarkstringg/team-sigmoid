@@ -9,6 +9,14 @@ def test_dockerfile_exists_and_uses_python_slim():
     assert "PYTHONPATH=/app" in dockerfile
 
 
+def test_dockerfile_uses_linux_line_continuations():
+    dockerfile = Path("Dockerfile").read_text(encoding="utf-8")
+
+    assert "`" not in dockerfile
+    assert "ENV PYTHONDONTWRITEBYTECODE=1 \\" in dockerfile
+    assert "RUN python -m pip install --upgrade pip \\" in dockerfile
+
+
 def test_dockerfile_installs_requirements_and_copies_app_code():
     dockerfile = Path("Dockerfile").read_text(encoding="utf-8")
 
