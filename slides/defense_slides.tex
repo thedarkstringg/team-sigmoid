@@ -1,1 +1,245 @@
-% Oral defense slide deck – placeholder stub
+% =====================================================================
+% defense_slides.tex  --  Beamer slide deck, Team Sigmoid
+% AI Academy ML Final Project, Spring 2026
+% Compile: pdflatex defense_slides
+% Output PDF should be copied/renamed to presentation/presentation.pdf
+% =====================================================================
+\documentclass[aspectratio=169,12pt]{beamer}
+\usetheme{Madrid}
+\usecolortheme{beaver}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{xcolor}
+
+\title[Boosting vs.\ Bagging]{Ensemble Methods:\\Boosting vs.\ Bagging}
+\subtitle{AI Academy -- Machine Learning Final Project, Spring 2026}
+\author{Emin Huseynli \and Ziyad Muradov \and Ismayil Yusifli}
+\institute{AI Academy, National AI Center}
+\date{July 2026}
+
+\begin{document}
+
+% ------------------------------------------------------------------
+\begin{frame}
+\titlepage
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Outline}
+\tableofcontents
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{Motivation}
+\begin{frame}{Motivation \& Central Question}
+\begin{block}{Central Question}
+  \textit{Under what conditions does boosting outperform bagging,\\
+  and vice versa --- and \textbf{why}?}
+\end{block}
+
+\bigskip
+\begin{columns}
+\column{0.5\textwidth}
+\textbf{Boosting (AdaBoost / SAMME)}
+\begin{itemize}
+  \item Re-weights hard examples
+  \item Reduces bias sequentially
+  \item Sensitive to noise
+\end{itemize}
+\column{0.5\textwidth}
+\textbf{Bagging (Random Forest)}
+\begin{itemize}
+  \item Bootstrap aggregation
+  \item Reduces variance in parallel
+  \item Robust to noise
+\end{itemize}
+\end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{Methods}
+\begin{frame}{Module 1 -- Decision Tree (CART)}
+\begin{itemize}
+  \item Implemented from scratch: Gini / entropy splitting
+  \item Supports sample weights (required by AdaBoost)
+  \item \texttt{max\_features} subsampling (required by Random Forest)
+  \item Verified within $\leq 2\%$ of sklearn on all datasets
+\end{itemize}
+\vfill
+\[
+  I_G(\mathbf{p}) = 1 - \sum_{c=1}^{C} p_c^2
+  \qquad
+  \Delta I = I_{\text{parent}} - \frac{N_L}{N}I_L - \frac{N_R}{N}I_R
+\]
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Module 2 -- AdaBoost (SAMME)}
+For $m = 1 \ldots M$:
+\begin{enumerate}
+  \item Fit stump $h_m$ with weights $\mathbf{w}^{(m)}$
+  \item $\epsilon_m = \dfrac{\sum_i w_i^{(m)} \mathbf{1}[h_m(x_i)\neq y_i]}{\sum_i w_i^{(m)}}$
+  \item $\alpha_m = \ln\dfrac{1-\epsilon_m}{\epsilon_m} + \ln(K-1)$
+  \item $w_i^{(m+1)} \propto w_i^{(m)} \exp\!\bigl(\alpha_m \mathbf{1}[h_m(x_i)\neq y_i]\bigr)$
+\end{enumerate}
+\vfill
+Final: $\hat{y} = \arg\max_k \sum_m \alpha_m \mathbf{1}[h_m(x)=k]$
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Module 3 -- Random Forest}
+\begin{itemize}
+  \item $T$ trees on bootstrap samples $\mathcal{D}_t$ (with replacement)
+  \item Each split selects $\lfloor\sqrt{p}\rfloor$ random features
+  \item Majority vote for prediction; averaged probabilities for \texttt{predict\_proba}
+  \item OOB score computed from out-of-bag samples
+  \item Parallelism via \texttt{multiprocessing.Pool} (\texttt{n\_jobs})
+\end{itemize}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Module 4 -- Unsupervised Pipeline}
+\begin{columns}
+\column{0.33\textwidth}
+\textbf{PCA}
+\begin{itemize}\small
+  \item Eigen-decomposition of covariance
+  \item Scree plot
+  \item 2D projection
+\end{itemize}
+\column{0.33\textwidth}
+\textbf{K-Means}
+\begin{itemize}\small
+  \item Lloyd's + k-means++ init
+  \item Elbow method ($k=1\ldots10$)
+  \item ARI vs.\ true labels
+\end{itemize}
+\column{0.33\textwidth}
+\textbf{DBSCAN}
+\begin{itemize}\small
+  \item Density-based
+  \item $\epsilon$ from k-distance knee
+  \item Noise fraction reported
+\end{itemize}
+\end{columns}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{Experiments}
+\begin{frame}{Datasets \& Experimental Design}
+\begin{table}
+\centering
+\begin{tabular}{llrl}
+\toprule
+Dataset & Task & Samples & Highlight \\
+\midrule
+Breast Cancer Wisconsin & Binary & 569 & Baseline \\
+Adult Income & Binary & 48\,842 & Class imbalance (SMOTE) \\
+Covertype (subset) & Multi-class & $\geq$5k & OvR AdaBoost \\
+MNIST 2-class & High-dim & $\geq$5k & 784 features \\
+\bottomrule
+\end{tabular}
+\end{table}
+\vfill
+\textbf{7 experiments}, all reproducible via \texttt{python src/experiments/run\_all.py}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Exp 1--2: Baseline \& AdaBoost Scaling}
+\begin{columns}
+\column{0.5\textwidth}
+\textbf{Exp 1 -- Baseline}
+\begin{itemize}
+  \item Single tree vs.\ stump vs.\ sklearn
+  \item Match within $2\%$ confirmed
+\end{itemize}
+
+\column{0.5\textwidth}
+\textbf{Exp 2 -- AdaBoost Scaling}
+\begin{itemize}
+  \item $n\_\text{estimators} = 1 \ldots 200$
+  \item Train/test error via \texttt{staged\_predict}
+  \item Observe overfitting onset
+\end{itemize}
+\end{columns}
+\vfill
+\textit{[Insert figure: figures/exp2\_*.png]}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Exp 3--5: RF, Head-to-Head, Noise}
+\begin{columns}
+\column{0.5\textwidth}
+\textbf{Exp 3 -- RF Scaling}\\
+Vary $n\_\text{estimators}$ and $\text{max\_depth}$; OOB vs.\ test accuracy.
+
+\medskip
+\textbf{Exp 4 -- Head-to-Head}\\
+5-fold CV; mean $\pm$ std accuracy, F1, AUC-ROC.
+
+\column{0.5\textwidth}
+\textbf{Exp 5 -- Noise Robustness}\\
+Flip labels at $\eta \in \{5\%, 10\%, 20\%\}$.\\
+AdaBoost degrades faster than RF.
+\end{columns}
+\vfill
+\textit{[Insert figures from figures/exp3\_*, exp4\_*, exp5\_*]}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Exp 6: Bias-Variance Decomposition}
+\begin{itemize}
+  \item $B = 100$ bootstrap replicates from training data
+  \item Compute bias$^2$ and variance per model
+  \item AdaBoost: low bias, higher variance
+  \item Random Forest: higher bias, low variance
+\end{itemize}
+\vfill
+\textit{[Insert bar chart: figures/exp6\_bias\_variance.png]}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Exp 7: Unsupervised Analysis}
+\begin{itemize}
+  \item Scree plot: PCs capturing $\geq 90\%$ variance
+  \item 2D scatter: true labels vs.\ K-Means vs.\ DBSCAN
+  \item ARI (K-Means) = --; ARI (DBSCAN) = --
+  \item DBSCAN captures non-convex structure missed by K-Means
+\end{itemize}
+\vfill
+\textit{[Insert: scree plot, PCA scatter, k-distance plot from figures/exp7\_*]}
+\end{frame}
+
+% ------------------------------------------------------------------
+\section{Results \& Conclusion}
+\begin{frame}{Key Findings}
+\begin{block}{When does Boosting win?}
+  Clean, balanced, binary datasets with enough rounds -- lower bias than RF.
+\end{block}
+\begin{block}{When does Bagging win?}
+  Noisy labels, class imbalance, high dimensionality -- lower variance, better robustness.
+\end{block}
+\begin{block}{Unsupervised insight}
+  PCA clusters align with class boundaries on clean data; DBSCAN reveals non-convex
+  geometry that K-Means misses.
+\end{block}
+\end{frame}
+
+% ------------------------------------------------------------------
+\begin{frame}{Conclusion}
+\begin{itemize}
+  \item Implemented Decision Tree, AdaBoost (SAMME), Random Forest, PCA, K-Means,
+        DBSCAN from scratch (NumPy only)
+  \item 7 experiments across 4 datasets with full reproducibility
+  \item Bonuses: SAMME.R (+2 pts), t-SNE visualization (+2 pts)
+  \item All code, tests, and report available at:\\
+        \url{https://github.com/thedarkstringg/ml-final} \quad (\texttt{v1.0-final})
+\end{itemize}
+\vfill
+\begin{center}
+\Large\textbf{Thank you -- Questions?}
+\end{center}
+\end{frame}
+
+\end{document}
