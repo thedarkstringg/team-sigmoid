@@ -1,1 +1,111 @@
-% Team contribution report – placeholder stub
+% =====================================================================
+% contribution_report.tex  --  Team Sigmoid, AI Academy ML Project
+% Compile with: pdflatex contribution_report
+% =====================================================================
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{parskip}
+
+\title{\textbf{Contribution Report}\\[0.5em]
+       \large Ensemble Methods: Boosting vs.\ Bagging\\
+       AI Academy -- Machine Learning Final Project, Spring 2026}
+\author{Team Sigmoid}
+\date{July 2026}
+
+\begin{document}
+\maketitle
+
+\section*{Team Members}
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Full Name} & \textbf{GitHub Username} & \textbf{Email} \\
+\midrule
+Emin Huseynli   & \texttt{ehuseynli96-ops} & ehuseynli96@gmail.com \\
+Ziyad Muradov   & \texttt{thedarkstringg}  & fgmz2014@gmail.com \\
+Ismayil Yusifli & \texttt{ismayilysfli}    & ismayilyusifli90@gmail.com \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section*{Individual Contributions}
+
+\renewcommand{\arraystretch}{1.4}
+\begin{longtable}{>{\bfseries}p{3cm} p{3.8cm} p{2.6cm} p{2.4cm} p{2cm} p{2cm}}
+\toprule
+Member & Modules / Code & Report Sections & Experiments & Slides & Other \\
+\midrule
+\endhead
+
+Emin Huseynli\newline
+{\normalfont\small\texttt{ehuseynli96-ops}} &
+\texttt{src/trees/decision\_tree.py}\newline
+\texttt{src/boosting/adaboost.py}\newline
+\texttt{src/boosting/samme\_r.py}\newline
+\texttt{experiments/run\_all.py}\newline
+\texttt{experiments/bonus\_samme\_r.py} &
+\S2 Decision Tree\newline
+\S3 AdaBoost &
+Exp.\ 1, Exp.\ 2 &
+Methods (Tree / AdaBoost) &
+Repo setup, \texttt{.gitignore}, initial scaffolding \\
+
+\midrule
+
+Ziyad Muradov\newline
+{\normalfont\small\texttt{thedarkstringg}} &
+\texttt{src/bagging/random\_forest.py}\newline
+\texttt{src/boosting/one\_vs\_rest\_adaboost.py}\newline
+\texttt{src/utils/preprocessing.py}\newline
+\texttt{src/utils/datasets.py}\newline
+\texttt{src/metrics/evaluation.py} &
+\S4 Random Forest\newline
+\S6 Experimental Setup &
+Exp.\ 3, Exp.\ 4, Exp.\ 5 &
+Results (RF / CV tables) &
+\texttt{requirements.txt}, dataset acquisition (Kaggle CSV, verifying MNIST / Covertype fetch) \\
+
+\midrule
+
+Ismayil Yusifli\newline
+{\normalfont\small\texttt{ismayilysfli}} &
+\texttt{src/unsupervised/pca.py}\newline
+\texttt{src/unsupervised/kmeans.py}\newline
+\texttt{src/unsupervised/dbscan.py}\newline
+\texttt{experiments/*.py} (1--7)\newline
+\texttt{experiments/bonus\_tsne.py}\newline
+\texttt{experiments/common.py} &
+\S1 Introduction\newline
+\S7 Unsupervised\newline
+Conclusion &
+Exp.\ 6, Exp.\ 7 &
+Full deck assembly, intro / conclusion slides &
+Report \LaTeX\ assembly, figures pipeline, contribution report compilation \\
+
+\bottomrule
+\end{longtable}
+
+\section*{Sign-off}
+
+All three members reviewed and approved the final codebase, report, and
+experimental results via GitHub pull request review.
+
+\medskip
+\noindent
+By submitting this report, each undersigned member confirms that the
+contributions listed above accurately reflect their individual work on
+this project.
+
+\bigskip
+\begin{tabular}{p{5cm} p{5cm} p{5cm}}
+\rule{4.5cm}{0.4pt} & \rule{4.5cm}{0.4pt} & \rule{4.5cm}{0.4pt} \\
+Emin Huseynli & Ziyad Muradov & Ismayil Yusifli \\
+\end{tabular}
+
+\end{document}
