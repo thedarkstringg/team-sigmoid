@@ -72,8 +72,8 @@ ml-final/
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/thedarkstringg/ml-final.git
-cd ml-final
+git clone https://github.com/thedarkstringg/team-sigmoid.git
+cd team-sigmoid
 
 # 2. Create and activate a virtual environment
 python -m venv .venv
